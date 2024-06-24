@@ -8,6 +8,10 @@ on:
   push:
     branches:
       - main
+  merge_group:
+    branches:
+      - main
+    
   workflow_call: # Allow to be called from the release workflow
   schedule:
     - cron: '31 15 * * 0' # Run periodically to keep CodeQL database updated
@@ -25,6 +29,9 @@ jobs:
         os: [windows-2022, ubuntu-22.04]
 
     runs-on: ${{ matrix.os }}
+
+    env:
+      IS_COVERAGE_ALLOWED: ${{ secrets.CODACY_PROJECT_TOKEN != '' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -81,9 +88,16 @@ jobs:
         name: .NET Code Coverage Reports (${{ matrix.os }})
         path: "artifacts/TestResults/coverage/**"
 
-    - name: Publish coverage summary
+    - name: Publish coverage summary to GitHub
       run: cat artifacts/TestResults/coverage/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
       shell: bash
+
+    - name: Upload coverage data to Codacy      
+      if: ${{ runner.os == 'Linux' && env.IS_COVERAGE_ALLOWED == 'true' }}
+      uses: codacy/codacy-coverage-reporter-action@v1.3.0
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: ${{ github.workspace }}/artifacts/TestResults/coverage/Cobertura.xml
 
     - name: Upload binlogs
       uses: actions/upload-artifact@v4

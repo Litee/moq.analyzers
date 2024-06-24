@@ -5,10 +5,13 @@
     <AnalysisMode>preview</AnalysisMode>
     <WarningLevel>9999</WarningLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">true</TreatWarningsAsErrors>
+    <MSBuildTreatWarningsAsErrors Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">true</MSBuildTreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="$(RepoRoot)/Source/stylecop.json" Visible="false" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)/stylecop.json" Visible="false" />
+    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)/.globalconfig" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,5 +28,18 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="SonarAnalyzer.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="CSharpGuidelinesAnalyzer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="ExhaustiveMatching.Analyzer" />
   </ItemGroup>
 </Project>

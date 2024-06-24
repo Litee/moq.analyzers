@@ -1,16 +1,14 @@
-using System.Diagnostics;
-
 namespace Moq.Analyzers;
 
 /// <summary>
-/// Mocked interfaces cannot have constructor parameters.
+/// Sealed classes cannot be mocked.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public class NoConstructorArgumentsForInterfaceMockAnalyzer : DiagnosticAnalyzer
+public class NoSealedClassMocksAnalyzer : DiagnosticAnalyzer
 {
-    internal const string RuleId = "Moq1001";
-    private const string Title = "Moq: Parameters specified for mocked interface";
-    private const string Message = "Mocked interfaces cannot have constructor parameters";
+    internal const string RuleId = "Moq1000";
+    private const string Title = "Moq: Sealed class mocked";
+    private const string Message = "Sealed classes cannot be mocked";
 
     private static readonly DiagnosticDescriptor Rule = new(
         RuleId,
@@ -35,9 +33,10 @@ public class NoConstructorArgumentsForInterfaceMockAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Analyze, SyntaxKind.ObjectCreationExpression);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements", Justification = "Tracked in https://github.com/rjmurillo/moq.analyzers/issues/90")]
     private static void Analyze(SyntaxNodeAnalysisContext context)
     {
-        ObjectCreationExpressionSyntax? objectCreation = (ObjectCreationExpressionSyntax)context.Node;
+        ObjectCreationExpressionSyntax objectCreation = (ObjectCreationExpressionSyntax)context.Node;
 
         // TODO Think how to make this piece more elegant while fast
         GenericNameSyntax? genericName = objectCreation.Type as GenericNameSyntax;
@@ -58,13 +57,7 @@ public class NoConstructorArgumentsForInterfaceMockAnalyzer : DiagnosticAnalyzer
         if (!string.Equals(
                 constructorSymbol.ContainingType.ConstructedFrom.ToDisplayString(),
                 "Moq.Mock<T>",
-                StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        if (constructorSymbol.Parameters == null || constructorSymbol.Parameters.Length == 0) return;
-        if (!constructorSymbol.Parameters.Any(x => x.IsParams)) return;
+                StringComparison.Ordinal)) return;
 
         // Find mocked type
         SeparatedSyntaxList<TypeSyntax> typeArguments = genericName.TypeArgumentList.Arguments;
@@ -73,11 +66,9 @@ public class NoConstructorArgumentsForInterfaceMockAnalyzer : DiagnosticAnalyzer
         if (symbolInfo.Symbol is not INamedTypeSymbol symbol) return;
 
         // Checked mocked type
-        if (symbol.TypeKind == TypeKind.Interface)
+        if (symbol.IsSealed && symbol.TypeKind != TypeKind.Delegate)
         {
-            Debug.Assert(objectCreation.ArgumentList != null, "objectCreation.ArgumentList != null");
-
-            Diagnostic? diagnostic = Diagnostic.Create(Rule, objectCreation.ArgumentList?.GetLocation());
+            Diagnostic diagnostic = Diagnostic.Create(Rule, typeArguments[0].GetLocation());
             context.ReportDiagnostic(diagnostic);
         }
     }
